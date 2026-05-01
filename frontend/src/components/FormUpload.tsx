@@ -2,6 +2,8 @@ import { Card, Label, FloatingLabel, Button, Badge } from "flowbite-react";
 import { FileInput } from "flowbite-react";
 import { useState, useEffect } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export const FormUpload = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -19,19 +21,20 @@ export const FormUpload = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
-    const userName = formData.get("name");
-    const fileName = formData.get("file-upload");
+    const userName = formData.get("name") as string | null;
+    const file = formData.get("file-upload") as File | null;
 
-    console.log(userName, fileName);
+    console.log(userName, file);
 
     if (!userName) {
       setError("Name is required");
       return;
     }
 
-    if (!fileName) {
+    if (!file) {
       setError("File is required");
       return;
     }
@@ -39,18 +42,28 @@ export const FormUpload = () => {
     setIsLoading(true);
 
     try {
-      const response: Response = await fetch("API", {
+      const response: Response = await fetch(`${API_URL}/upload`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: userName,
-          file: fileName,
+          fullName: userName,
+          fileName: file.name,
         }),
       });
-      //   if (!response.ok) throw new Error("Failed to get URL");
-      const { url } = await response.json();
-      console.log(url);
-      event.currentTarget.reset();
+      if (!response.ok) throw new Error("Failed to get URL");
+
+      const { presignedUrl } = await response.json();
+
+      const uploadFile = await fetch(presignedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
+
+      if (!uploadFile.ok)
+        throw new Error("Failed to upload the file to the bucket");
+
+      form.reset();
     } catch (error) {
       console.log(error);
       setError("Something went wrong. Try again");
