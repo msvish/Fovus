@@ -6,6 +6,7 @@ frontend/yarn-debug.log*
 frontend/yarn-error.log*
 frontend/pnpm-debug.log*
 frontend/lerna-debug.log*
+frontend/.env
 
 backend/cdk/node_modules
 backend/cdk/lambda/upload-handler/node_modules
